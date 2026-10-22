@@ -1,0 +1,1 @@
+{ "thread": { "id": "top-level-2", "status": { "type": "idle" }, "turns": [{ "id": "turn-1", "status": "interrupted", "items": [{ "text": "TURN_ITEM_SENTINEL", "prompt": "PROMPT_SENTINEL" }] }], "name": "TITLE_SENTINEL", "preview": "PREVIEW_SENTINEL", "cwd": "PROJECT_PATH_SENTINEL" } }

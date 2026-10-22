@@ -1,0 +1,1 @@
+{ "thread": { "id": "top-level-2", "status": { "type": "systemError" }, "turns": [{ "id": "turn-1", "status": "completed", "items": [{ "text": "TURN_ITEM_SENTINEL", "prompt": "PROMPT_SENTINEL" }] }] } }

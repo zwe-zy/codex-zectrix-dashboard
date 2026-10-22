@@ -1,0 +1,27 @@
+name: Restore verified public assets
+on:
+  push:
+    branches: [publication-staging]
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore pinned public resources and verify the complete source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/fonts plugin/bin
+          curl --fail --location --retry 3 'https://raw.githubusercontent.com/google/fonts/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf' -o assets/fonts/NotoSansSC.ttf
+          curl --fail --location --retry 3 'https://raw.githubusercontent.com/BarryBarrywu/codex-zectrix-dashboard/db1dc650e4b79ecbd0b7634407f1d7d7bc49867c/plugin/bin/codex-zectrix-dashboard' -o plugin/bin/codex-zectrix-dashboard
+          printf '%s\n' 'a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da  assets/fonts/NotoSansSC.ttf' 'db8a285baeb8e15db97e0ad4ace6280a74170c532dcdda429890e5696c53470f  plugin/bin/codex-zectrix-dashboard' | sha256sum --check
+          chmod +x plugin/bin/codex-zectrix-dashboard
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- assets/fonts/NotoSansSC.ttf plugin/bin/codex-zectrix-dashboard
+          git rm -- .github/workflows/bootstrap-publication.yml
+          test "$(git write-tree)" = '693172be92a15841c274f7d770035d5a120d118b'
+          git commit -m 'Complete verified Windows 0.3.0-rc.5 public source'
+          git push origin HEAD:main

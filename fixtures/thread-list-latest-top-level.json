@@ -1,0 +1,8 @@
+{
+  "data": [
+    { "id": "top-level-1", "parentThreadId": null, "updatedAt": 700, "recencyAt": 600, "status": { "type": "idle" }, "name": "TITLE_SENTINEL", "preview": "PREVIEW_SENTINEL", "cwd": "PROJECT_PATH_SENTINEL" },
+    { "id": "newer-subagent", "parentThreadId": "top-level-1", "updatedAt": 1000, "recencyAt": 1000, "status": { "type": "active", "activeFlags": [] }, "name": "TITLE_SENTINEL", "preview": "PREVIEW_SENTINEL", "cwd": "PROJECT_PATH_SENTINEL" },
+    { "id": "missing-parent", "updatedAt": 900, "recencyAt": 900, "status": { "type": "active", "activeFlags": [] }, "name": "TITLE_SENTINEL", "preview": "PREVIEW_SENTINEL", "cwd": "PROJECT_PATH_SENTINEL" }
+  ],
+  "nextCursor": "page-two"
+}

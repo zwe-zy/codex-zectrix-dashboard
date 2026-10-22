@@ -1,0 +1,7 @@
+{
+  "data": [
+    { "id": "top-level-2", "parentThreadId": null, "updatedAt": 800, "status": { "type": "idle" }, "name": "TITLE_SENTINEL", "preview": "PREVIEW_SENTINEL", "cwd": "PROJECT_PATH_SENTINEL" },
+    { "id": "same-recency", "parentThreadId": null, "updatedAt": 700, "recencyAt": 800, "status": { "type": "idle" }, "name": "TITLE_SENTINEL", "preview": "PREVIEW_SENTINEL", "cwd": "PROJECT_PATH_SENTINEL" }
+  ],
+  "nextCursor": null
+}

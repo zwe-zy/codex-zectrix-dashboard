@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+target/
+/dist/
+/preview.png
+/.env
+/.env.*
+/auth.json
+/settings.json
+/inkcards.json
+/appearance.json
+/pending-preview.png
+/*.log

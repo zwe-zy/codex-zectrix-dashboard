@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Dashboard for ZECTRIX</title>
+  <desc id="desc">Codex quota, reset radar, and task activity rendered locally on a real ZECTRIX NOTE4 e-ink display.</desc>
+  <defs>
+    <clipPath id="photo-clip"><rect x="738" y="30" width="430" height="338" rx="18"/></clipPath>
+  </defs>
+
+  <rect width="1200" height="420" rx="24" fill="#f2f0e8"/>
+  <g transform="translate(56 45)">
+    <text fill="#64625c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600" letter-spacing="2">CODEX DASHBOARD FOR ZECTRIX</text>
+    <text y="96" fill="#11110f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="66" font-weight="800" letter-spacing="-3">把 Codex 状态，</text>
+    <text y="164" fill="#11110f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="66" font-weight="800" letter-spacing="-3">留在桌面。</text>
+    <text y="226" fill="#34332f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="27">额度、重置雷达与任务动态，在 Mac 本地渲染，</text>
+    <text y="265" fill="#34332f" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="27">只在画面变化时推送到 NOTE4。</text>
+    <g transform="translate(0 316)" fill="#64625c" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
+      <circle cx="7" cy="-6" r="6" fill="#11110f"/><text x="24">READ ONLY</text>
+      <circle cx="167" cy="-6" r="6" fill="none" stroke="#11110f" stroke-width="2"/><text x="184">LOCAL RENDER</text>
+      <circle cx="370" cy="-6" r="6" fill="#11110f"/><text x="387">CHANGE ONLY</text>
+    </g>
+  </g>
+
+  <g clip-path="url(#photo-clip)">
+    <image x="738" y="-15" width="430" height="573" preserveAspectRatio="none" href="../device-photo.jpg" xlink:href="../device-photo.jpg"/>
+  </g>
+  <rect x="738" y="30" width="430" height="338" rx="18" fill="none" stroke="#11110f" stroke-width="2"/>
+  <rect x="756" y="48" width="281" height="34" rx="5" fill="#11110f" fill-opacity=".9"/>
+  <text x="770" y="71" fill="#fffef9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="600" letter-spacing="1">REAL NOTE4 / 400 × 300</text>
+
+  <path d="M56 386H700" stroke="#c9c6bb"/>
+  <g transform="translate(750 400)" fill="#34332f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">
+    <text>ACTIVE WATCH · 70%</text>
+    <g transform="translate(204 -10)" stroke="#11110f">
+      <rect width="12" height="8" fill="#11110f"/><rect x="15" width="12" height="8" fill="#11110f"/><rect x="30" width="12" height="8" fill="#11110f"/><rect x="45" width="12" height="8" fill="#11110f"/><rect x="60" width="12" height="8" fill="#11110f"/><rect x="75" width="12" height="8" fill="#11110f"/><rect x="90" width="12" height="8" fill="#11110f"/>
+      <rect x="105" width="12" height="8" fill="none"/><rect x="120" width="12" height="8" fill="none"/><rect x="135" width="12" height="8" fill="none"/>
+    </g>
+  </g>
+</svg>

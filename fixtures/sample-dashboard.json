@@ -1,0 +1,35 @@
+{
+  "quota": {
+    "windows": [
+      {
+        "name": "7 天",
+        "used_percent": 8,
+        "resets_at_epoch_seconds": 1786891600
+      }
+    ],
+    "reset_credits": 1,
+    "stale": false
+  },
+  "radar": {
+    "state": "confirmed",
+    "kind": "regular",
+    "stale": false
+  },
+  "tasks": [
+    {
+      "title": "生成本地看板",
+      "state": "running",
+      "activity_at_epoch_seconds": 1786330000
+    },
+    {
+      "title": "修复配额布局",
+      "state": "turn_completed",
+      "activity_at_epoch_seconds": 1786329000
+    },
+    {
+      "title": "检查隐私模式",
+      "state": "failed",
+      "activity_at_epoch_seconds": 1786328000
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Record privacy-allowlisted Codex lifecycle edges for the ZECTRIX dashboard.",
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/codex-zectrix-dashboard\" hook-record", "timeout": 5 }] }
+    ],
+    "PreToolUse": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/codex-zectrix-dashboard\" hook-record", "timeout": 5 }] }
+    ],
+    "PostToolUse": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/codex-zectrix-dashboard\" hook-record", "timeout": 5 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/codex-zectrix-dashboard\" hook-record", "timeout": 5 }] }
+    ]
+  }
+}

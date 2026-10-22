@@ -1,0 +1,17 @@
+{
+  "rateLimitsByLimitId": {
+    "other": {
+      "primary": { "usedPercent": 1, "resetsAt": 1999999999 },
+      "secondary": { "usedPercent": 2, "resetsAt": 1999999998 }
+    },
+    "codex": {
+      "primary": { "usedPercent": 24, "resetsAt": 1900000000 },
+      "secondary": { "usedPercent": 80, "resetsAt": 1900000100 }
+    }
+  },
+  "rateLimits": {
+    "primary": { "usedPercent": 99, "resetsAt": 1800000000 },
+    "secondary": { "usedPercent": 98, "resetsAt": 1800000100 }
+  },
+  "account": { "email": "ACCOUNT_SENTINEL" }
+}

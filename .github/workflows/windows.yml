@@ -1,0 +1,30 @@
+name: Windows candidate validation
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: rustfmt,clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --all-targets --features test-support
+      - run: cargo test --locked --all-targets --features desktop,test-support
+      - run: ./scripts/build-release-windows.ps1
+      - run: ./scripts/test-windows-package.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-zectrix-dashboard-windows-candidate
+          path: |
+            target/windows-release/*-windows-x86_64.zip
+            target/windows-release/SHA256SUMS
+          if-no-files-found: error

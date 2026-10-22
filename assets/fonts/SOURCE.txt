@@ -1,0 +1,5 @@
+Noto Sans SC variable font; Google Fonts official repository.
+Revision: 45e3d5269e4a17d823f6d84470bc084dc5ae46f6
+Source: https://github.com/google/fonts/tree/45e3d5269e4a17d823f6d84470bc084dc5ae46f6/ofl/notosanssc
+SHA256: a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da
+License: SIL Open Font License 1.1 (OFL.txt). Unmodified font.

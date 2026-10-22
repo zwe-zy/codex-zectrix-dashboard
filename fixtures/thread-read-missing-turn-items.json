@@ -1,0 +1,1 @@
+{ "thread": { "status": { "type": "idle" }, "turns": [{ "id": "TURN_ID_SENTINEL", "status": "completed" }] } }

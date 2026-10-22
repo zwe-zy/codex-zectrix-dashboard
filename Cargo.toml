@@ -1,0 +1,59 @@
+[package]
+name = "codex-zectrix-dashboard"
+version = "0.3.0-rc.5"
+edition = "2024"
+license = "MIT"
+
+[features]
+test-support = []
+desktop = ["dep:eframe"]
+
+[[bin]]
+name = "codex-zectrix-desktop"
+path = "src/bin/codex-zectrix-desktop.rs"
+required-features = ["desktop"]
+
+[[bin]]
+name = "codex-zectrix-test-app-server"
+path = "tests/support/fake_codex.rs"
+required-features = ["test-support"]
+
+[dependencies]
+eframe = { version = "=0.37.0", optional = true, default-features = false, features = ["wgpu", "default_fonts", "accesskit", "x11", "wayland"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+png = "0.18"
+keyring = { version = "3", default-features = false, features = ["apple-native", "windows-native"] }
+ctrlc = "3"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "multipart", "rustls-tls"] }
+rpassword = "7"
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+time = { version = "0.3.44", features = ["local-offset", "parsing"] }
+u8g2-fonts = "0.7"
+embedded-graphics = "0.8"
+zeroize = "1"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "3.7"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.60", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_JobObjects",
+    "Win32_System_Threading",
+    "Win32_System_Registry",
+    "Win32_Security",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+tempfile = "3"
+walkdir = "2"

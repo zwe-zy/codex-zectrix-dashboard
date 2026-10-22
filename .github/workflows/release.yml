@@ -1,0 +1,36 @@
+name: Legacy macOS validation (manual)
+
+# The current release supports Windows. Keep the legacy macOS pipeline
+# available for explicit compatibility work without publishing a macOS build.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: macos-14
+    env:
+      CODEX_CLI_VERSION: 0.146.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          components: clippy,rustfmt
+      - run: npm install --global "@openai/codex@$CODEX_CLI_VERSION"
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --all-features
+      - run: ./scripts/build-release.sh
+      - name: Validate packaged companion behavior
+        env:
+          CODEX_ZECTRIX_TEST_BINARY: ${{ github.workspace }}/plugin/bin/codex-zectrix-dashboard
+        run: cargo test --locked --test release_package --test plugin_lifecycle --test setup_cli --test companion_cli --test diagnostics_cli --test publisher
+      - run: ./scripts/test-clean-install.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-zectrix-dashboard-macos
+          path: target/codex-zectrix-dashboard-*-macos.tar.gz
+          if-no-files-found: error
