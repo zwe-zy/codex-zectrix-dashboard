@@ -17,8 +17,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Probe Windows PowerShell COM environment
-        shell: python
+        shell: pwsh
         run: |
+          @'
           import os, subprocess, tempfile, pathlib
           root=pathlib.Path(tempfile.mkdtemp())
           code="$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $s=(New-Object -ComObject WScript.Shell).CreateShortcut('"+str(root/'probe.lnk')+"'); $s.TargetPath='C:\\Windows\\notepad.exe'; $s.Description='NOTE4 控制台'; $s.Save(); 'created'"
@@ -28,6 +29,8 @@ jobs:
             if clean: env.pop('PSModulePath',None)
             p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],env=env,capture_output=True)
             print('clean_modules',clean,'exit',p.returncode,'stdout',p.stdout.decode('utf-8',errors='replace'),'stderr',p.stderr.decode('utf-8',errors='replace'))
+          '@ | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/shortcut-probe.py"
+          python "$env:RUNNER_TEMP/shortcut-probe.py"
   windows:
     if: inputs.shortcut_diagnostic != true
     runs-on: windows-latest
