@@ -1,13 +1,22 @@
 use super::background_windows::{OperationGuard, reject_link};
 use crate::install::{Installation, Package};
-use serde::Deserialize;
 use std::{
+    ffi::OsString,
     fs,
-    os::windows::process::CommandExt,
+    os::windows::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
 };
-use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
+use windows::{
+    Win32::{
+        Foundation::RPC_E_CHANGED_MODE,
+        System::Com::{
+            CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+            CoUninitialize, IPersistFile, STGM_READ,
+        },
+        UI::Shell::{IShellLinkW, SLGP_RAWPATH, ShellLink},
+    },
+    core::{Interface, PCWSTR, w},
+};
 
 #[derive(Debug, thiserror::Error)]
 #[error("开始菜单快捷方式操作未完成")]
@@ -22,10 +31,9 @@ pub enum ShortcutOutcome {
     PreservedForeign,
 }
 
-#[derive(Deserialize)]
 struct LinkDetails {
     target: PathBuf,
-    arguments: String,
+    arguments: OsString,
     working: PathBuf,
 }
 
@@ -80,9 +88,26 @@ impl ShortcutManager {
         }
     }
     fn owned(&self) -> Result<bool, ShortcutError> {
-        let details: LinkDetails = serde_json::from_slice(&powershell(&format!(
-            "$s=(New-Object -ComObject WScript.Shell).CreateShortcut({}); @{{target=$s.TargetPath;arguments=$s.Arguments;working=$s.WorkingDirectory}} | ConvertTo-Json -Compress", quote(&self.link())
-        ))?).map_err(|_| ShortcutError)?;
+        let path = shell_path(&self.link())?;
+        let details = with_shell_link(|link| {
+            let file: IPersistFile = link.cast()?;
+            let mut target = vec![0u16; 32768];
+            let mut arguments = vec![0u16; 32768];
+            let mut working = vec![0u16; 32768];
+            // All buffers are live UTF-16 buffers; no target resolution or execution occurs.
+            unsafe {
+                file.Load(PCWSTR(path.as_ptr()), STGM_READ)?;
+                link.GetPath(&mut target, std::ptr::null_mut(), SLGP_RAWPATH.0 as u32)?;
+                link.GetArguments(&mut arguments)?;
+                link.GetWorkingDirectory(&mut working)?;
+            }
+            Ok((target, arguments, working))
+        })?;
+        let details = LinkDetails {
+            target: PathBuf::from(read_wide(&details.0)?),
+            arguments: read_wide(&details.1)?,
+            working: PathBuf::from(read_wide(&details.2)?),
+        };
         Ok(details.arguments.is_empty()
             && self.valid_gui(&details.target)
             && details.target.parent().is_some_and(|parent| {
@@ -100,8 +125,6 @@ impl ShortcutManager {
     pub fn ensure(&self, installed_gui: &Path) -> Result<ShortcutOutcome, ShortcutError> {
         self.validate_link()?;
         if !self.valid_gui(installed_gui) {
-            #[cfg(feature = "test-support")]
-            eprintln!("shortcut diagnostic: invalid GUI path {}", installed_gui.display());
             return Err(ShortcutError);
         }
         let exists = self.link().exists();
@@ -109,12 +132,21 @@ impl ShortcutManager {
             return Ok(ShortcutOutcome::PreservedForeign);
         }
         fs::create_dir_all(&self.programs).map_err(|_| ShortcutError)?;
-        powershell(&format!(
-            "$s=(New-Object -ComObject WScript.Shell).CreateShortcut({}); $s.TargetPath={}; $s.Arguments=''; $s.WorkingDirectory={}; $s.Description='NOTE4 控制台'; $s.Save()",
-            quote(&self.link()),
-            quote(installed_gui),
-            quote(installed_gui.parent().ok_or(ShortcutError)?)
-        ))?;
+        let path = shell_path(&self.link())?;
+        let target = shell_path(installed_gui)?;
+        let working = shell_path(installed_gui.parent().ok_or(ShortcutError)?)?;
+        with_shell_link(|link| {
+            let file: IPersistFile = link.cast()?;
+            // Use the Unicode interface: WScript.Shell rejects Chinese targets on
+            // some Windows locales. The validated buffers live through each call.
+            unsafe {
+                link.SetPath(PCWSTR(target.as_ptr()))?;
+                link.SetArguments(w!(""))?;
+                link.SetWorkingDirectory(PCWSTR(working.as_ptr()))?;
+                link.SetDescription(w!("NOTE4 控制台"))?;
+                file.Save(PCWSTR(path.as_ptr()), true)
+            }
+        })?;
         Ok(if exists {
             ShortcutOutcome::Updated
         } else {
@@ -133,34 +165,54 @@ impl ShortcutManager {
         Ok(ShortcutOutcome::Removed)
     }
 }
-fn quote(path: &Path) -> String {
-    // WScript.Shell does not accept Rust's canonical verbatim (\\?\) paths.
-    // Normalize only at this COM boundary, after the ownership/path checks.
-    let path = path.to_string_lossy();
-    let shell_path = if let Some(unc) = path.strip_prefix(r"\\?\UNC\") {
-        format!(r"\\{unc}")
-    } else {
-        path.strip_prefix(r"\\?\").unwrap_or(&path).to_owned()
-    };
-    format!("'{}'", shell_path.replace('\'', "''"))
-}
-fn powershell(code: &str) -> Result<Vec<u8>, ShortcutError> {
-    let script = format!(
-        "$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); {code}"
-    );
-    let output = Command::new("powershell.exe")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
-        .stdin(Stdio::null())
-        .stderr(Stdio::piped())
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-        .map_err(|_| ShortcutError)?;
-    if !output.status.success() {
-        #[cfg(feature = "test-support")]
-        eprintln!("shortcut diagnostic: {}", String::from_utf8_lossy(&output.stderr));
+fn shell_path(path: &Path) -> Result<Vec<u16>, ShortcutError> {
+    // Normalize canonical verbatim prefixes only at the Shell boundary. Keep
+    // UTF-16 intact, including paths not representable in the system code page.
+    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+    let prefix: Vec<u16> = r"\\?\".encode_utf16().collect();
+    let unc: Vec<u16> = r"\\?\UNC\".encode_utf16().collect();
+    if wide.starts_with(&unc) {
+        wide.splice(..unc.len(), [b'\\' as u16, b'\\' as u16]);
+    } else if wide.starts_with(&prefix) {
+        wide.drain(..prefix.len());
+    }
+    if wide.contains(&0) {
         return Err(ShortcutError);
     }
-    Ok(output.stdout)
+    wide.push(0);
+    Ok(wide)
+}
+fn read_wide(buffer: &[u16]) -> Result<OsString, ShortcutError> {
+    let end = buffer.iter().position(|&c| c == 0).ok_or(ShortcutError)?;
+    if end == buffer.len() - 1 {
+        // Refuse potentially truncated ownership data.
+        return Err(ShortcutError);
+    }
+    Ok(OsString::from_wide(&buffer[..end]))
+}
+fn with_shell_link<T>(
+    operation: impl FnOnce(&IShellLinkW) -> windows::core::Result<T>,
+) -> Result<T, ShortcutError> {
+    struct Apartment(bool);
+    impl Drop for Apartment {
+        fn drop(&mut self) {
+            if self.0 {
+                // Balance only our successful CoInitializeEx, on this same thread.
+                unsafe { CoUninitialize() };
+            }
+        }
+    }
+    // Existing GUI threads may already be in an STA; keep their apartment.
+    let initialized = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
+    if initialized.is_err() && initialized != RPC_E_CHANGED_MODE {
+        return Err(ShortcutError);
+    }
+    let _apartment = Apartment(initialized.is_ok());
+    // COM is initialized and the interface remains on this thread. Declaration
+    // order drops the link (including on errors) before the apartment guard.
+    let link: IShellLinkW = unsafe { CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER) }
+        .map_err(|_| ShortcutError)?;
+    operation(&link).map_err(|_| ShortcutError)
 }
 /// Shortcut failure does not roll back a successfully committed installation.
 pub fn ensure_installed_shortcut(data: &Path) -> Option<String> {

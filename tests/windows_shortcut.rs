@@ -106,3 +106,40 @@ fn shortcut_accepts_canonical_windows_paths() {
     assert!(programs.join("Codex NOTE4.lnk").is_file());
     assert_eq!(manager.remove_owned().unwrap(), ShortcutOutcome::Removed);
 }
+
+#[test]
+fn shortcut_preserves_existing_com_apartment() {
+    use windows::Win32::{
+        Foundation::RPC_E_CHANGED_MODE,
+        System::Com::{
+            COINIT_APARTMENTTHREADED, COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize,
+        },
+    };
+    for apartment in [COINIT_APARTMENTTHREADED, COINIT_MULTITHREADED] {
+        std::thread::spawn(move || {
+            // This fresh test thread owns one successful COM initialization.
+            unsafe { CoInitializeEx(None, apartment) }.ok().unwrap();
+            let dir = tempfile::tempdir().unwrap();
+            let data = dir.path().join("data");
+            InstallManager::new(&data, fixture::Host::default())
+                .install_or_update(&fixture::desktop_package(dir.path(), "0.3.0-rc.1"))
+                .unwrap();
+            let manager = ShortcutManager::new(dir.path().join("Programs"), data.join("app"));
+            manager
+                .ensure(&data.join("app/0.3.0-rc.1/NOTE4控制台.exe"))
+                .unwrap();
+            assert_eq!(manager.remove_owned().unwrap(), ShortcutOutcome::Removed);
+            let other = if apartment == COINIT_APARTMENTTHREADED {
+                COINIT_MULTITHREADED
+            } else {
+                COINIT_APARTMENTTHREADED
+            };
+            // A mismatched apartment must still fail: the helper did not tear
+            // down or change the caller's original COM initialization.
+            assert_eq!(unsafe { CoInitializeEx(None, other) }, RPC_E_CHANGED_MODE);
+            unsafe { CoUninitialize() };
+        })
+        .join()
+        .unwrap();
+    }
+}

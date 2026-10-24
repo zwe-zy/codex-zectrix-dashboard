@@ -5,41 +5,10 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
-    inputs:
-      shortcut_diagnostic:
-        type: boolean
-        default: false
 permissions:
   contents: read
 jobs:
-  shortcut-diagnostic:
-    if: inputs.shortcut_diagnostic == true
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Probe Windows PowerShell COM environment
-        shell: pwsh
-        run: |
-          @'
-          import os, subprocess, tempfile, pathlib, shutil
-          root=pathlib.Path(tempfile.mkdtemp())
-          for real in [False,True]:
-            for chinese in [False,True]:
-              folder=root/str(real)/str(chinese)/'app'/'0.3.0-rc.1'
-              folder.mkdir(parents=True)
-              target=folder/('NOTE4控制台.exe' if chinese else 'console.exe')
-              if real: shutil.copyfile(r'C:\Windows\notepad.exe',target)
-              else: target.write_text('desktop fixture')
-              for mixed in [False,True]:
-                target_text=str(target)
-                if mixed: target_text=target_text.replace('app\\0.3.0-rc.1\\','app/0.3.0-rc.1/')
-                code="$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $s=(New-Object -ComObject WScript.Shell).CreateShortcut('"+str(root/'probe.lnk')+"'); $s.TargetPath='"+target_text+"'; $s.Description='NOTE4 控制台'; $s.Save(); 'created'"
-                p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],capture_output=True,stdin=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
-                print('real',real,'chinese',chinese,'mixed_slashes',mixed,'exit',p.returncode,'stderr',p.stderr.decode('utf-8',errors='replace'))
-          '@ | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/shortcut-probe.py"
-          python "$env:RUNNER_TEMP/shortcut-probe.py"
   windows:
-    if: inputs.shortcut_diagnostic != true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

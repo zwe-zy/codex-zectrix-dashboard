@@ -627,6 +627,7 @@ dependencies = [
  "time",
  "u8g2-fonts",
  "walkdir",
+ "windows",
  "windows-sys 0.60.2",
  "zeroize",
 ]
