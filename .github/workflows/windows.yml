@@ -5,10 +5,31 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      shortcut_diagnostic:
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
+  shortcut-diagnostic:
+    if: inputs.shortcut_diagnostic == true
+    runs-on: windows-latest
+    steps:
+      - name: Probe Windows PowerShell COM environment
+        shell: python
+        run: |
+          import os, subprocess, tempfile, pathlib
+          root=pathlib.Path(tempfile.mkdtemp())
+          code="$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $s=(New-Object -ComObject WScript.Shell).CreateShortcut('"+str(root/'probe.lnk')+"'); $s.TargetPath='C:\\Windows\\notepad.exe'; $s.Description='NOTE4 控制台'; $s.Save(); 'created'"
+          print('module path:',os.environ.get('PSModulePath'))
+          for clean in [False,True]:
+            env=dict(os.environ)
+            if clean: env.pop('PSModulePath',None)
+            p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],env=env,capture_output=True)
+            print('clean_modules',clean,'exit',p.returncode,'stdout',p.stdout.decode('utf-8',errors='replace'),'stderr',p.stderr.decode('utf-8',errors='replace'))
   windows:
+    if: inputs.shortcut_diagnostic != true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
