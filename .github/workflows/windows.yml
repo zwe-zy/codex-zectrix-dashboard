@@ -17,21 +17,25 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.99.1
-      - run: cargo test --locked --features test-support --test windows_shortcut -- --nocapture
       - name: Probe Windows PowerShell COM environment
         shell: pwsh
         run: |
           @'
-          import os, subprocess, tempfile, pathlib
+          import os, subprocess, tempfile, pathlib, shutil
           root=pathlib.Path(tempfile.mkdtemp())
-          code="$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $s=(New-Object -ComObject WScript.Shell).CreateShortcut('"+str(root/'probe.lnk')+"'); $s.TargetPath='C:\\Windows\\notepad.exe'; $s.Description='NOTE4 控制台'; $s.Save(); 'created'"
-          print('module path:',os.environ.get('PSModulePath'))
-          for clean in [False,True]:
-            env=dict(os.environ)
-            if clean: env.pop('PSModulePath',None)
-            p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],env=env,capture_output=True,stdin=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
-            print('clean_modules',clean,'exit',p.returncode,'stdout',p.stdout.decode('utf-8',errors='replace'),'stderr',p.stderr.decode('utf-8',errors='replace'))
+          for real in [False,True]:
+            for chinese in [False,True]:
+              folder=root/str(real)/str(chinese)/'app'/'0.3.0-rc.1'
+              folder.mkdir(parents=True)
+              target=folder/('NOTE4控制台.exe' if chinese else 'console.exe')
+              if real: shutil.copyfile(r'C:\Windows\notepad.exe',target)
+              else: target.write_text('desktop fixture')
+              for mixed in [False,True]:
+                target_text=str(target)
+                if mixed: target_text=target_text.replace('app\\0.3.0-rc.1\\','app/0.3.0-rc.1/')
+                code="$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $s=(New-Object -ComObject WScript.Shell).CreateShortcut('"+str(root/'probe.lnk')+"'); $s.TargetPath='"+target_text+"'; $s.Description='NOTE4 控制台'; $s.Save(); 'created'"
+                p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],capture_output=True,stdin=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
+                print('real',real,'chinese',chinese,'mixed_slashes',mixed,'exit',p.returncode,'stderr',p.stderr.decode('utf-8',errors='replace'))
           '@ | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/shortcut-probe.py"
           python "$env:RUNNER_TEMP/shortcut-probe.py"
   windows:
