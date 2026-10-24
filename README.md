@@ -2,9 +2,9 @@
 
 把 Codex 的额度和可验证的任务状态显示在 ZECTRIX NOTE4 电子纸上。
 
-Windows 图形控制台 `0.3.0-rc.5` 候选版：下载 ZIP、解压、双击程序，按中文向导完成配置即可。使用者不需要安装 Rust、Python 或 Node.js。
+Windows 图形控制台 `0.3.0-rc.6` 候选版：下载 ZIP、解压、双击程序，按中文向导完成配置即可。使用者不需要安装 Rust、Python 或 Node.js。
 
-**[下载 Windows x64 安装包](https://github.com/zwe-zy/codex-zectrix-dashboard/releases/download/v0.3.0-rc.5/codex-zectrix-dashboard-0.3.0-rc.5-windows-x86_64.zip)** · [版本说明与 SHA256 校验文件](https://github.com/zwe-zy/codex-zectrix-dashboard/releases/tag/v0.3.0-rc.5)
+**[下载 Windows x64 安装包](https://github.com/zwe-zy/codex-zectrix-dashboard/releases/download/v0.3.0-rc.6/codex-zectrix-dashboard-0.3.0-rc.6-windows-x86_64.zip)** · [版本说明与 SHA256 校验文件](https://github.com/zwe-zy/codex-zectrix-dashboard/releases/tag/v0.3.0-rc.6)
 
 ## Windows 使用
 

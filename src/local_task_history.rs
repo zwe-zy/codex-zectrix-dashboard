@@ -13,6 +13,25 @@ pub struct LocalTaskHistory {
 }
 
 impl LocalTaskHistory {
+    /// Desktop continuation rollouts retain the logical thread ID but append
+    /// the execution ID used by the history projection. Only trust the path
+    /// supplied for this enumerated root; never scan files or message contents.
+    pub fn read_state_for_rollout(
+        &self,
+        thread_id: &str,
+        rollout: Option<&Path>,
+        now: i64,
+    ) -> Result<Option<TaskState>, CodexStatusError> {
+        let history_id = history_id(thread_id, rollout)?;
+        let state = self.read_state(history_id, now)?;
+        if history_id != thread_id && state.is_none() {
+            // Projection lag or stale activity must not revive the previous
+            // execution's ended state, including through the private server.
+            return Ok(Some(TaskState::Unavailable));
+        }
+        Ok(state)
+    }
+
     pub fn from_environment() -> Result<Self, CodexStatusError> {
         let directory = std::env::var_os("CODEX_HOME")
             .map(PathBuf::from)
@@ -104,4 +123,57 @@ impl LocalTaskHistory {
             _ => None,
         })
     }
+}
+
+pub(crate) fn history_id<'a>(
+    thread_id: &'a str,
+    rollout: Option<&'a Path>,
+) -> Result<&'a str, CodexStatusError> {
+    let Some(path) = rollout else {
+        return Ok(thread_id);
+    };
+    let invalid = || CodexStatusError::Incompatible;
+    if !path.is_absolute() || !uuid(thread_id) {
+        return Err(invalid());
+    }
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(invalid)?;
+    let body = name
+        .strip_prefix("rollout-")
+        .and_then(|name| name.strip_suffix(".jsonl"))
+        .ok_or_else(invalid)?;
+    let timestamp = body.get(..19).ok_or_else(invalid)?;
+    if !timestamp.bytes().enumerate().all(|(i, byte)| match i {
+        4 | 7 | 13 | 16 => byte == b'-',
+        10 => byte == b'T',
+        _ => byte.is_ascii_digit(),
+    }) {
+        return Err(invalid());
+    }
+    let ids = body
+        .get(19..)
+        .and_then(|s| s.strip_prefix('-'))
+        .ok_or_else(invalid)?;
+    if ids == thread_id {
+        return Ok(thread_id);
+    }
+    let execution = ids
+        .strip_prefix(thread_id)
+        .and_then(|s| s.strip_prefix('_'))
+        .filter(|id| uuid(id))
+        .ok_or_else(invalid)?;
+    Ok(execution)
+}
+
+fn uuid(value: &str) -> bool {
+    value.len() == 36
+        && value.bytes().enumerate().all(|(i, byte)| {
+            if matches!(i, 8 | 13 | 18 | 23) {
+                byte == b'-'
+            } else {
+                byte.is_ascii_hexdigit()
+            }
+        })
 }

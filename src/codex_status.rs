@@ -143,15 +143,27 @@ impl CodexStatusSource {
                     && !matches!(thread.status, ThreadStatus::Active { .. })
                     && let Some(state) = history.as_ref().and_then(|history| {
                         history
-                            .read_state(
+                            .read_state_for_rollout(
                                 &thread.id,
+                                thread.path.as_deref(),
                                 crate::platform::now_epoch_seconds().unwrap_or(now),
                             )
-                            .ok()
-                            .flatten()
+                            .unwrap_or(Some(TaskState::Unavailable))
                     })
                 {
+                    partial |= state == TaskState::Unavailable;
                     aggregate = prioritize(aggregate, state);
+                    continue;
+                }
+                // Even if the history DB cannot be opened, a continuation or
+                // unknown path must never fall back to the logical ID's old turn.
+                if matches!(thread.parent_thread_id, ParentThreadId::Root)
+                    && !matches!(thread.status, ThreadStatus::Active { .. })
+                    && !crate::local_task_history::history_id(&thread.id, thread.path.as_deref())
+                        .is_ok_and(|id| id == thread.id)
+                {
+                    partial = true;
+                    aggregate = prioritize(aggregate, TaskState::Unavailable);
                     continue;
                 }
                 partial |= matches!(thread.parent_thread_id, ParentThreadId::Missing)
@@ -421,6 +433,8 @@ struct ThreadListPage {
 #[serde(rename_all = "camelCase")]
 struct ThreadSummary {
     id: String,
+    #[serde(default)]
+    path: Option<std::path::PathBuf>,
     #[serde(default, deserialize_with = "deserialize_parent_thread_id")]
     parent_thread_id: ParentThreadId,
     updated_at: i64,

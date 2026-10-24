@@ -162,6 +162,26 @@ fn serve_json_lines() {
                     })
                 }
             }
+            Some("thread/list") if scenario_is("status-continuation") => {
+                let idle = std::env::current_exe()
+                    .unwrap()
+                    .with_extension("idle")
+                    .exists();
+                let path = fs::read_to_string(
+                    std::env::current_exe()
+                        .unwrap()
+                        .with_extension("rollout-path"),
+                )
+                .unwrap();
+                json!({
+                    "id": request["id"],
+                    "result": { "data": [{
+                        "id": "10000000-0000-7000-8000-000000000001", "parentThreadId": null,
+                        "updatedAt": codex_zectrix_dashboard::platform::now_epoch_seconds().unwrap()-10,
+                        "status": { "type": if idle {"idle"} else {"notLoaded"} }, "path": path
+                    }], "nextCursor": null }
+                })
+            }
             Some("thread/list") if scenario_is("status-local-history") => json!({
                 "id": request["id"],
                 "result": { "data": [
@@ -217,6 +237,17 @@ fn serve_json_lines() {
                 "id": request["id"],
                 "result": serde_json::from_str::<Value>(include_str!("../../fixtures/thread-list-latest-top-level-page-two.json")).unwrap()
             }),
+            Some("thread/read") if scenario_is("status-continuation") => {
+                fs::write(
+                    std::env::current_exe().unwrap().with_extension("old-read"),
+                    b"read",
+                )
+                .unwrap();
+                json!({"id":request["id"],"result":{"thread":{
+                    "status":{"type":"idle"},"turns":[{"id":"superseded","items":[],"status":"interrupted",
+                        "completedAt":codex_zectrix_dashboard::platform::now_epoch_seconds().unwrap()-10}]
+                }}})
+            }
             Some("thread/read")
                 if has_thread_read_params(&request) && scenario_is("status-malformed-read") =>
             {

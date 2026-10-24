@@ -1,4 +1,4 @@
-Codex NOTE4 控制台 — Windows x64 0.3.0-rc.5
+Codex NOTE4 控制台 — Windows x64 0.3.0-rc.6
 
 第一次使用（不需要 Rust / Python / Node.js）
 1. 安装并打开 Windows 版 Codex，登录自己的 ChatGPT 账号。

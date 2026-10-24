@@ -86,3 +86,23 @@ fn modified_shortcut_is_not_overwritten_or_deleted() {
         fs::remove_file(&link).unwrap();
     }
 }
+
+#[test]
+fn shortcut_accepts_canonical_windows_paths() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(dir.path()).unwrap();
+    let data = root.join("data");
+    let programs = root.join("Programs");
+    InstallManager::new(&data, fixture::Host::default())
+        .install_or_update(&fixture::desktop_package(&root, "0.3.0-rc.1"))
+        .unwrap();
+    let manager = ShortcutManager::new(programs.clone(), data.join("app"));
+    assert_eq!(
+        manager
+            .ensure(&data.join("app/0.3.0-rc.1/NOTE4控制台.exe"))
+            .unwrap(),
+        ShortcutOutcome::Created
+    );
+    assert!(programs.join("Codex NOTE4.lnk").is_file());
+    assert_eq!(manager.remove_owned().unwrap(), ShortcutOutcome::Removed);
+}

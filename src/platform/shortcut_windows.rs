@@ -132,7 +132,15 @@ impl ShortcutManager {
     }
 }
 fn quote(path: &Path) -> String {
-    format!("'{}'", path.to_string_lossy().replace('\'', "''"))
+    // WScript.Shell does not accept Rust's canonical verbatim (\\?\) paths.
+    // Normalize only at this COM boundary, after the ownership/path checks.
+    let path = path.to_string_lossy();
+    let shell_path = if let Some(unc) = path.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{unc}")
+    } else {
+        path.strip_prefix(r"\\?\").unwrap_or(&path).to_owned()
+    };
+    format!("'{}'", shell_path.replace('\'', "''"))
 }
 fn powershell(code: &str) -> Result<Vec<u8>, ShortcutError> {
     let script = format!(
