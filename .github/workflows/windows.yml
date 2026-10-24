@@ -27,7 +27,7 @@ jobs:
           for clean in [False,True]:
             env=dict(os.environ)
             if clean: env.pop('PSModulePath',None)
-            p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],env=env,capture_output=True)
+            p=subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-Command',code],env=env,capture_output=True,stdin=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
             print('clean_modules',clean,'exit',p.returncode,'stdout',p.stdout.decode('utf-8',errors='replace'),'stderr',p.stderr.decode('utf-8',errors='replace'))
           '@ | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/shortcut-probe.py"
           python "$env:RUNNER_TEMP/shortcut-probe.py"
