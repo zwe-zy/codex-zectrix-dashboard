@@ -100,6 +100,8 @@ impl ShortcutManager {
     pub fn ensure(&self, installed_gui: &Path) -> Result<ShortcutOutcome, ShortcutError> {
         self.validate_link()?;
         if !self.valid_gui(installed_gui) {
+            #[cfg(feature = "test-support")]
+            eprintln!("shortcut diagnostic: invalid GUI path {}", installed_gui.display());
             return Err(ShortcutError);
         }
         let exists = self.link().exists();
@@ -149,11 +151,13 @@ fn powershell(code: &str) -> Result<Vec<u8>, ShortcutError> {
     let output = Command::new("powershell.exe")
         .args(["-NoProfile", "-NonInteractive", "-Command", &script])
         .stdin(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|_| ShortcutError)?;
     if !output.status.success() {
+        #[cfg(feature = "test-support")]
+        eprintln!("shortcut diagnostic: {}", String::from_utf8_lossy(&output.stderr));
         return Err(ShortcutError);
     }
     Ok(output.stdout)

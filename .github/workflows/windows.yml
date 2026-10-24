@@ -16,6 +16,9 @@ jobs:
     if: inputs.shortcut_diagnostic == true
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - run: cargo test --locked --features test-support --test windows_shortcut -- --nocapture
       - name: Probe Windows PowerShell COM environment
         shell: pwsh
         run: |
